@@ -1,0 +1,222 @@
+from pygame import *
+from random import randint 
+
+
+win_width = 700
+win_height = 500
+window = display.set_mode((win_width, win_height))
+display.set_caption('Post')
+background = transform.scale(image.load('postoffice.jpg'), (win_width, win_height))
+
+font.init()
+font1 = font.Font(None,80)
+win = font1.render('YOU WIN!!!',True , (255,255,255))
+lose = font1.render('YOU LOSE!!!',True, (180,0,0))
+font2 = font.Font(None,36)
+
+
+mixer.init()
+mixer.music.load('fon.ogg')
+mixer.music.play()
+korobka_sound = mixer.Sound('korobka.ogg')
+picmo_sound = mixer.Sound('picmo.ogg')
+
+img_back = 'postoffice.jpg'
+img_hero = 'postman.png'
+img_picmo = 'picmo.png'
+img_bad_picmo = 'bad_picmo.png'
+img_korobka = 'korobka.png'
+img_bad_korobka = 'bad_korobka.png'
+
+
+score = 0
+lost = 0
+max_lost = 20
+goal = 10
+life = 3
+
+class GameSprite(sprite.Sprite):
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed):
+        sprite.Sprite.__init__(self)
+        self.image = transform.scale(image.load(player_image), (size_x, size_y))
+        self.speed = player_speed
+        self.rect = self.image.get_rect()
+        self.rect.x = player_x
+        self.rect.y = player_y
+
+    def reset(self):
+        window.blit(self.image, (self.rect.x, self.rect.y))
+
+class Player(GameSprite):
+    def update(self):
+        keys = key.get_pressed()
+        if keys[K_LEFT] and self.rect.x > 5:
+            self.rect.x -= self.speed
+        elif keys[K_RIGHT] and self.rect.x < win_width - 80:
+            self.rect.x += self.speed
+     
+
+class Enemy_1(GameSprite):
+    def update(self):
+        self.rect.y +=self.speed 
+        global lost 
+        if self.rect.y > win_height:
+            self.rect.x = randint(80, win_width-80)
+            self.rect.y = 0
+            lost +=1
+
+class Enemy_2(GameSprite):
+    def update(self):
+        self.rect.y +=self.speed
+
+
+postman = Player(img_hero, 5, win_height - 100, 80, 100, 10)
+
+picmos = sprite.Group()
+for i in range(1,5):
+    picmo = Enemy_1(img_picmo, randint(80, win_width-80), -40, 40, 30, randint(1,3))
+    picmos.add(picmo)
+
+bad_picmos = sprite.Group()
+for d in range(1,3):
+    bad_picmo = Enemy_2(img_bad_picmo, randint(80, win_width-80), -40, 50, 50, randint(1,5))
+    bad_picmos.add(bad_picmo)
+
+korobkas = sprite.Group()
+for d in range(1,3):
+    korobka = Enemy_2(img_korobka, randint(80, win_width-80), -40, 60, 50, randint(1,5))
+    korobkas.add(korobka)
+
+bad_korobkas = sprite.Group()
+for d in range(1,3):
+    bad_korobka = Enemy_2(img_bad_korobka, randint(80, win_width-80), -40, 60, 50, randint(1,5))
+    bad_korobkas.add(bad_korobka)
+
+
+finish = False
+run = True
+
+
+while run:
+    for e in event.get():
+        if e.type == QUIT:
+            run = False
+
+    
+
+    if finish!= True:
+
+        window.blit(background, (0, 0))
+        postman.update()
+        picmos.update()
+        bad_picmos.update()
+        korobkas.update()
+        bad_korobkas.update()
+        
+        postman.reset()
+        picmos.draw(window)
+        bad_picmos.draw(window)
+        korobkas.draw(window) 
+        bad_korobkas.draw(window)       
+
+        text = font2.render('Счёт:'+str(score), 1, (255,255,255))
+        window.blit(text, (10,20))
+
+        text_lose = font2.render('Пропущено:'+str(lost), 1, (255,255,255))
+        window.blit(text_lose, (10,50))
+
+        if life == 3:
+            life_colour = (0,150,0)
+        if life == 2:
+            life_colour = (150,150,0)
+        if life == 1:
+            life_colour = (150,0,0)
+
+        text_life = font1.render(str(life),1, life_colour)
+        window.blit(text_life, (650,10))
+        
+    
+
+        if sprite.spritecollide(postman, picmos, False):
+            sprite.spritecollide(postman, picmos, True)
+            score += 1
+
+            picmo = Enemy_1(img_picmo, randint(80, win_width - 80), -40, 40, 30, randint(1,3))
+            picmos.add(picmo)
+            bad_picmo = Enemy_2(img_bad_picmo, randint(80, win_width-80), -40, 50, 50, randint(1,5))
+            bad_picmos.add(bad_picmo)
+
+                
+        if sprite.spritecollide(postman, bad_picmos, False):
+            sprite.spritecollide(postman,bad_picmos, True)
+            life -= 1
+            bad_picmo = Enemy_2(img_bad_picmo, randint(80, win_width-80), -40, 50, 50, randint(1,5))
+            bad_picmos.add(bad_picmo)
+            picmo_sound.play()
+
+        if sprite.spritecollide(postman, korobkas, False):
+            sprite.spritecollide(postman, korobkas, True)
+            score += 1
+            korobka = Enemy_1(img_korobka, randint(80, win_width-80), -40, 60, 50, randint(1,3))
+            korobkas.add(korobka)            
+            bad_korobka = Enemy_2(img_bad_korobka, randint(80, win_width-80), -40, 50, 50, randint(1,5))
+            bad_korobkas.add(bad_korobka)
+
+        if sprite.spritecollide(postman, bad_korobkas, False):
+            sprite.spritecollide(postman,bad_korobkas, True)
+            life -= 1
+            bad_korobka = Enemy_2(img_bad_korobka, randint(80, win_width-80), -40, 50, 50, randint(1,5))
+            bad_korobkas.add(bad_korobka)
+            korobka_sound.play()
+
+
+
+        if life == 0 or lost >= max_lost:
+                finish = True
+                window.blit(lose, (200,200))
+
+        if score >= goal:
+            finish = True
+            window.blit(win, (200, 200))
+
+        display.update()
+    else: 
+        finish = False
+        score = 0
+        lost = 0
+        life = 3
+
+        for a in picmos:
+            a.kill()
+
+        for b in bad_picmos:
+            b.kill()
+
+        for c in bad_korobkas:
+            c.kill()
+
+        for d in korobkas:
+            d.kill()
+
+
+
+        for e in range(1,4):
+            picmo = Enemy_1(img_picmo, randint(80, win_width-80), -40, 40, 30, randint(1,5))
+            picmos.add(picmo)
+
+        for f in range(1,4):
+            bad_picmo = Enemy_2(img_bad_picmo, randint(80, win_width-80), -40, 50, 50, randint(1,5))
+            bad_picmos.add(bad_picmo)
+
+        
+        for g in range(1,3):
+            korobka = Enemy_1(img_korobka, randint(80, win_width-80), -40, 60, 50, randint(1,3))
+            korobkas.add(korobka)
+
+
+        for h in range(1,3):
+            bad_korobka = Enemy_2(img_bad_korobka, randint(80, win_width-80), -40, 50, 50, randint(1,5))
+            bad_korobkas.add(bad_korobka)
+        
+
+    time.delay(50)
